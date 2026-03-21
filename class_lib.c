@@ -1,28 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "class_lib.h"
-/*
-double submitjana(int l1, int l2, double M[N][N], int q, int i, int j)
+
+double submitjana(int l2, double *M, int q, int i, int j)
 {
-    int f, c;
     double sum = 0;
-    for(f=0; f<q; f++){
-        for(c=0; c<q; c++){
+    for(int f=i*q; f<i*q+q; f++){
+        for(int c=j*q; c<j*q+q; c++){
             //afegim cada valor a values
-            sum += M[i*q + f][j*q + c];
+            sum += M[f*l2+c];
         }
     }
     return (sum/(q*q));
 }
 
-void gridificator(int l1, int l2, double M[N][N], int n, int m, double** G){
-	if(N >= L){
-		q = N/L;
-		for(int i=0; i<L; i++)
-			for(int j=0; j<L; j++)
-				G[i][j] = submitjana(N, M, q, i, j);
-	}
-*/
+void gridificator(int l1, int l2, double *M, int compression, double* G){ 
+	// Compression is number of squares in big matrix to one square in small matrix.
+	// New matrix will be n x m
+	int n = l1/compression;
+	int m = l2/compression;
+	for(int i=0; i<n; i++)
+		for(int j=0; j<m; j++)
+			G[i*m+j] = submitjana(l2, M, compression, i, j);
+}
 
 /* SLICING */
 
@@ -78,4 +77,6 @@ int slice_graph(int n, int m, double cutoff, double *M, int (*p)[2]){
 	free(A);
 	return x;
 }
+
+
 
