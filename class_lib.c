@@ -36,7 +36,7 @@ double max_search(int n,int m,double *M){
 
 void cut(int n, int m, double cutoff, double *M, int *A){
 	for(int i=0;i<n;i++)
-		for(int j=0;j<n;j++)
+		for(int j=0;j<m;j++)
 			if (M[i*m+j] > cutoff) {A[i*m+j] = 1;} else {A[i*m+j] = 0;}
 }
 
@@ -70,10 +70,10 @@ int matgraf(int n, int m, int *A, int (*P)[2]){
 /* SLICE & DICE */
 
 int slice_graph(int n, int m, double cutoff, double *M, int (*p)[2]){
-        /* SLICING */
+    /* SLICING */
 	int *A = malloc(n*m*sizeof(int));
-        cut(n,m,cutoff,M,A);
-        /* GRAPHING */
+    cut(n,m,cutoff,M,A);
+    /* GRAPHING */
 	int x =  matgraf(n,m,A,p);	
 	free(A);
 	return x;
