@@ -5,6 +5,7 @@ import numpy as np
 import tkinter as tk
 from PIL import Image, ImageTk
 import networkx as nx
+import matplotlib
 
 def on_slider_move(epis):
     try:
@@ -18,9 +19,13 @@ def on_slider_move(epis):
     image_display.image = tk_photo
 
 def bitmap(epis):
+    gr = nx.Graph()
     gr_con = (ctypes.c_int * (int(2 * n * m * 2)))()
     gr_con_len = class_lib.slice_graph(n, m, epis, G, gr_con)
     gr_con_to_py = [(gr_con[2 * i], gr_con[2 * i + 1]) for i in range(gr_con_len)]
+    edges_list = [(G[x[0]],G[x[1]]) for x in gr_con_to_py]
+    gr.add_edges_from(edges_list)
+    nx.write_graphml(gr, "/home/place/Desktop/migrafito.graphml")
     pixel_set = set([x for y in gr_con_to_py for x in y])
     imi = Image.new(mode="RGB", size=(m,n), color="white")
     pixels = imi.load()
@@ -39,7 +44,7 @@ def bitmap(epis):
     return imi
 
 
-compression = 100
+compression = 1000
 vanish = 100
 file_path = "data/GHS_POP_E2025_GLOBE_R2023A_54009_100_V1_0_R3_C19.tif"
 
@@ -95,34 +100,26 @@ root.title("Policentrinator")
 root.geometry("2000x960")
 root.resizable(width = True, height = True)
 
-selected = tk.StringVar(root, "0")
-r1 = tk.Radiobutton(root, text='Value cuts', value=1, variable=selected)
-r2 = tk.Radiobutton(root, text='Connection cuts', value=2, variable=selected)
-r1.pack()
-r2.pack()
+pper_label = tk.Label(root, text = "Percentage of points: " + str(pper) + "%")
+pper_label.grid(row=0, column = 1, pady = 20, padx=20)
 
-while selected.get() == "0": "<-- WHILE NO FUNCIONA PORQUE ES ROOT, AÑADE UN BOTON ZORRA"
-    if selected.get() == "1":
-        pper_label = tk.Label(root, text = "Percentage of points: " + str(pper) + "%")
-        pper_label.grid(row=0, column = 1, pady = 20, padx=20)
+image_display = tk.Label(root)
+image_display.grid(row=0, column=0, padx=20, pady=20, rowspan = 19)
 
-        image_display = tk.Label(root)
-        image_display.grid(row=0, column=0, padx=20, pady=20, rowspan = 19)
+slider=tk.Scale(root,from_=0, to = 100, orient="horizontal", length = size*m, command=on_slider_move)
+slider.grid(row=20, column=0,pady=20,padx=20)
 
-        slider=tk.Scale(root,from_=0, to = 100, orient="horizontal", length = size*m, command=on_slider_move)
-        slider.grid(row=20, column=0,pady=20,padx=20)
+button = tk.Button(root, text = "Test")
+button.grid(row=3, column = 1, pady=20, padx=20)
 
-        button = tk.Button(root, text = "Test")
-        button.grid(row=3, column = 1, pady=20, padx=20)
+vanish_label = tk.Label(root, text = "Vanish Factor")
+vanish_label.grid(row=1, column = 1, pady = 20, padx=20)
 
-        vanish_label = tk.Label(root, text = "Vanish Factor")
-        vanish_label.grid(row=1, column = 1, pady = 20, padx=20)
+vanish_entry = tk.Entry(root)
+vanish_entry.grid(row=2, column = 1, pady=20, padx=20)
 
-        vanish_entry = tk.Entry(root)
-        vanish_entry.grid(row=2, column = 1, pady=20, padx=20)
-
-        on_slider_move(0)
+on_slider_move(0)
 
 
-    root.mainloop()
+root.mainloop()
 
