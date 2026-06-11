@@ -1,7 +1,9 @@
-gitattributes# Demote the SageMath notebook - it's documentation-level importance
+gitattributes
 *.ipynb linguist-documentation
 
-# Ensure C and Python are detected correctly
 *.c linguist-language=C
 *.h linguist-language=C
 *.py linguist-language=Python
+
+.idea/* linguist-vendored
+.ipynb_checkpoints/* linguist-vendored
