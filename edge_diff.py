@@ -13,7 +13,7 @@ from rasterio.features import rasterize
 
 
 def bitmap(epis):
-    global pper, max_val, gp
+    global pper, max_val
     matrix = [[G[i*m+j] for j in range(m)] for i in range(n)]
     gr = nx.Graph()
     for i in range(n):
@@ -22,17 +22,20 @@ def bitmap(epis):
         gr.add_edges_from([((i * m + j, matrix[i][j]), (i * m + j + m, matrix[i+1][j])) for i in range(n - 1) if abs(matrix[i][j] - matrix[i+1][j]) < epis])
     conex_list = list(nx.connected_components(gr))
     max_val = 0
-    average = []
+    sums = []
     colors_dict = {i*m+j : 0 for i in range(n) for j in range(m)}
     for conex in conex_list:
         sum_temp = sum(a[1] for a in conex)
-        average.append(sum_temp)
+        sums.append(sum_temp)
         for a in conex:
             colors_dict[a[0]] = sum_temp
         max_val = max(max_val, sum_temp)
-    gp = abs(math.log((max_val - sum(average)/len(conex_list)) / max_val))
-    max_label.config(text="Maximum value of connected component: " + str(max_val))
-    gp_label.config(text="Degree of polycentrism: " + str(gp))
+    sums = sum(sums)
+    gpa = (sums-max_val)/sums
+    gpr = (sums/len(conex_list))/max_val
+    max_label.config(text="Pes del centre dominant: " + str(max_val))
+    gpa_label.config(text="GPa: " + str(gpa))
+    gpr_label.config(text="GPr: " + str(gpr))
     imi = Image.new(mode="RGB", size=(m, n), color="white")
     pixels = imi.load()
     for i in range(n):
@@ -107,6 +110,19 @@ for i in range(n):
 
         G[i * m + j] = block_mean
 
+# for i in range(n):
+#     for j in range(m):
+#         row_start = i * compression
+#         row_stop = min((i + 1) * compression, n_in)
+#         col_start = j * compression
+#         col_stop = min((j + 1) * compression, m_in)
+#
+#         block = full_raster[row_start:row_stop, col_start:col_stop]
+#         block_mean = np.nan_to_num(block, nan=0.0).mean()
+#
+#         G[i * m + j] = block_mean
+
+
 class_lib = ctypes.CDLL("./class_lib.dll")
 
 class_lib.max_search.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double)]
@@ -119,7 +135,8 @@ class_lib.slice_graph.restype = ctypes.c_int
 maxi = class_lib.max_search(n,m,G)
 pper=100
 max_val = maxi
-gp = 0
+gpa = 0
+gpr = 0
 
 miau = (ctypes.c_int * (int(2 * n * m * 2)))()
 miau_len = class_lib.slice_graph(n, m, 0, G, miau)
@@ -131,10 +148,12 @@ root.title("Policentrinator")
 root.geometry("2000x960")
 root.resizable(width = True, height = True)
 
-max_label = tk.Label(root, text = "Maximum value of connected component: " + str(max_val), font=("Arial", 20))
+max_label = tk.Label(root, text = "Pes del centre dominant: " + str(max_val), font=("Arial", 20))
 max_label.grid(row=1, column = 1, pady = 20, padx=20)
-gp_label = tk.Label(root, text = "Degree of polycentrism: " + str(gp), font=("Arial", 20))
-gp_label.grid(row=2, column = 1, pady = 20, padx=20)
+gpa_label = tk.Label(root, text = "Gpa: " + str(gpa), font=("Arial", 20))
+gpa_label.grid(row=2, column = 1, pady = 20, padx=20)
+gpr_label = tk.Label(root, text = "Gpr: " + str(gpr), font=("Arial", 20))
+gpr_label.grid(row=3, column = 1, pady = 20, padx=20)
 
 
 image_display = tk.Label(root)
