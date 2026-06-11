@@ -1,6 +1,21 @@
-This is a WIP. class.c and class are placeholder programs in C to execute the code from the library. The SageMath/Python code has a placeholder matrix for testing as a very basic density map. 
+tall.py and diff.py are the main files mentioned in memòria.pdf. Class\_lib.c is the library for the code written in C. Class.ipynb is an old prototype of tall.py code, written in SageMath, left here for the purpose of easy testing. The  dependencies for the python code are:
 
-TODO:
-· Accepting bigger density maps and properly implementing the gridification function inside class_lib.c.
-· Implementing processing from a density map into C. 
-· Creation of our own density maps based on isochrone maps from the location of various services. 
+
+· random
+
+· Math
+
+· Ctypes
+
+· NumPy
+
+· TkInter
+
+· PIL
+
+· NetworkX
+
+· Geopandas
+
+· Rasterio
+

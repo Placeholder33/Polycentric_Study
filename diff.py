@@ -1,12 +1,46 @@
-import rasterio
 import ctypes
 import math
 import numpy as np
 import tkinter as tk
 from PIL import Image, ImageTk
 import networkx as nx
-import matplotlib
 import geopandas as gpd
+from random import randint
+from rasterio.transform import from_bounds
+from rasterio.features import rasterize
+
+
+def bitmap(epis):
+    global pper, max_val
+    matrix = [[G[i*m+j] for j in range(m)] for i in range(n)]
+    gr = nx.Graph()
+    for i in range(n):
+        gr.add_edges_from([((i*m+j, matrix[i][j]), (i*m+j+1, matrix[i][j+1])) for j in range(m-1) if abs(matrix[i][j] - matrix[i][j+1]) < epis])
+    for j in range(m):
+        gr.add_edges_from([((i * m + j, matrix[i][j]), (i * m + j + m, matrix[i+1][j])) for i in range(n - 1) if abs(matrix[i][j] - matrix[i+1][j]) < epis])
+    conex_list = list(nx.connected_components(gr))
+    max_val = 0
+    sums = []
+    colors_dict = {i*m+j : 0 for i in range(n) for j in range(m)}
+    for conex in conex_list:
+        sum_temp = sum(a[1] for a in conex)
+        sums.append(sum_temp)
+        for a in conex:
+            colors_dict[a[0]] = sum_temp
+        max_val = max(max_val, sum_temp)
+    sums = sum(sums)
+    gpa = (sums-max_val)/sums
+    gpr = (sums/len(conex_list))/max_val
+    max_label.config(text="Pes del centre dominant: " + str(max_val))
+    gpa_label.config(text="GPa: " + str(gpa))
+    gpr_label.config(text="GPr: " + str(gpr))
+    imi = Image.new(mode="RGB", size=(m, n), color="white")
+    pixels = imi.load()
+    for i in range(n):
+        for j in range(m):
+            color = 255 - int((colors_dict[i*m+j]/max_val) * 255)
+            pixels[j, i] = (color, color, color)
+    return imi
 
 
 def on_slider_move(epis):
@@ -21,51 +55,7 @@ def on_slider_move(epis):
     image_display.image = tk_photo
 
 
-def bitmap(epis):
-    global pper, max_val, gp
-    gr = nx.Graph()
-    gr_con = (ctypes.c_int * (int(2 * n * m * 2)))()
-    gr_con_len = class_lib.slice_graph(n, m, epis, G, gr_con)
-    gr_con_to_py = [(gr_con[2 * i], gr_con[2 * i + 1]) for i in range(gr_con_len)]
-    edges_list = [((x[0], G[x[0]]), (x[1], G[x[1]])) for x in gr_con_to_py]
-    gr.add_edges_from(edges_list)
-    conex_list = list(nx.connected_components(gr))
-    max_val = 0
-    sums = []
-    max_indexes = []
-    for conex in conex_list:
-        sum_temp = sum(a[1] for a in conex)
-        sums.append(sum_temp)
-        if max_val < sum_temp:
-            max_indexes = {a[0] for a in conex}
-            max_val = sum_temp
-    sums = sum(sums)
-    gpa = (sums-max_val)/sums
-    gpr = (sums/len(conex_list))/max_val
-    pixel_set = {x for y in gr_con_to_py for x in y}
-    imi = Image.new(mode="RGB", size=(m, n), color="white")
-    pixels = imi.load()
-    temp = 0
-    for i in range(n):
-        for j in range(m):
-            if i*m + j in max_indexes:
-                temp += 1
-                pixels[j, i] = (136, 8, 8)
-            elif i * m + j in pixel_set:
-                temp += 1
-                pixels[j, i] = (0, 0, 0)
-            else:
-                pixels[j, i] = (255, 255, 255)
-    pper = temp / inipi * 100
-    global pper_label
-    max_label.config(text="Pes del centre dominant: " + str(max_val))
-    pper_label.config(text="Percentatge de punts per sobre del tall: " + str(pper))
-    gpa_label.config(text="GPa: " + str(gpa))
-    gpr_label.config(text="GPr: " + str(gpr))
-    return imi
-
-
-compression = 25
+compression = 10
 vanish = 100
 file_path = "data/gridpoblacio01012025.shp"
 pop_column = "TOTAL"
@@ -82,10 +72,6 @@ m = math.ceil(m_in / compression)
 print(n_in, m_in)
 print(n, m)
 size = min(800 / n, 1400 / m)
-
-from rasterio.transform import from_bounds
-from rasterio.features import rasterize
-
 transform = from_bounds(*bounds, width=m_in, height=n_in)
 
 shapes = (
@@ -114,9 +100,26 @@ for i in range(n):
         col_stop = min((j + 1) * compression, m_in)
 
         block = full_raster[row_start:row_stop, col_start:col_stop]
-        block_mean = np.nan_to_num(block, nan=0.0).mean()
+
+        if np.isnan(block).all():
+            block_mean = 0.0
+        else:
+            block_mean = np.nanmean(block)
 
         G[i * m + j] = block_mean
+
+# for i in range(n):
+#     for j in range(m):
+#         row_start = i * compression
+#         row_stop = min((i + 1) * compression, n_in)
+#         col_start = j * compression
+#         col_stop = min((j + 1) * compression, m_in)
+#
+#         block = full_raster[row_start:row_stop, col_start:col_stop]
+#         block_mean = np.nan_to_num(block, nan=0.0).mean()
+#
+#         G[i * m + j] = block_mean
+
 
 class_lib = ctypes.CDLL("./class_lib.dll")
 
@@ -143,14 +146,13 @@ root.title("Policentrinator")
 root.geometry("2000x960")
 root.resizable(width = True, height = True)
 
-pper_label = tk.Label(root, text = "Percentatge de punts per sobre del tall: " + str(pper) + "%", font=("Arial", 20))
-pper_label.grid(row=0, column = 1, pady = 20, padx=20)
 max_label = tk.Label(root, text = "Pes del centre dominant: " + str(max_val), font=("Arial", 20))
 max_label.grid(row=1, column = 1, pady = 20, padx=20)
 gpa_label = tk.Label(root, text = "Gpa: " + str(gpa), font=("Arial", 20))
 gpa_label.grid(row=2, column = 1, pady = 20, padx=20)
 gpr_label = tk.Label(root, text = "Gpr: " + str(gpr), font=("Arial", 20))
 gpr_label.grid(row=3, column = 1, pady = 20, padx=20)
+
 
 image_display = tk.Label(root)
 image_display.grid(row=0, column=0, padx=20, pady=20, rowspan = 19)
@@ -159,9 +161,9 @@ slider=tk.Scale(root,from_=0, to = 100, orient="horizontal", length = size*m, co
 slider.grid(row=20, column=0,pady=20,padx=20)
 
 vanish_entry = tk.Entry(root)
-vanish_entry.grid(row=5, column = 1, pady=20, padx=20)
+vanish_entry.grid(row=4, column = 1, pady=20, padx=20)
 
-on_slider_move(0)
+on_slider_move(0.5)
 
 
 root.mainloop()
