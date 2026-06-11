@@ -1,6 +1,6 @@
 gitattributes
-*.ipynb linguist-documentation
 
+*.ipynb linguist-language-SageMath
 *.c linguist-language=C
 *.h linguist-language=C
 *.py linguist-language=Python
